@@ -7,12 +7,14 @@
 
 using namespace std;
 
-const int SCREEN_HORIZONTAL = 150;
-const int SCREEN_VERTICAL = 50;
+const float GRAVITY[2] = {0, 1};
+const int SCREEN_HORIZONTAL = 230;
+const int SCREEN_VERTICAL = 75;
 char screen[SCREEN_VERTICAL][SCREEN_HORIZONTAL];
 char prevScreen[SCREEN_VERTICAL][SCREEN_HORIZONTAL];
 
 bool change = true;
+int refresh = 0;
 bool exitTheGame = false;
 
 char currentInput = '0';
@@ -23,9 +25,12 @@ class GameObject {
         int position[2];
         int width;
         int height;
+        float mass;
+        float velocity[2];
+        float acceleration[2];
         GameObject(string, int, int, string, int);
         void Draw();
-        void Move(int, int  );
+        void Move(int, int);
         void Clean();
 };
 GameObject::GameObject(string iname, int x, int y, string igraphic, int iwidth){
@@ -77,17 +82,45 @@ void GameObject::Move(int x, int y){
 }
 
 
-
 //function prototypes
 void setCursorPosition(int x, int y);
 void drawScreen();
 void gameRoutine();
-void getInput();
+
+//async windows funcs
+DWORD WINAPI getAsyncInput(LPVOID lpParam){
+    while(1){
+        currentInput = getch();
+        Sleep(100);
+        currentInput = '0';
+    }
+}
+DWORD WINAPI updateScreen(LPVOID lpParam){
+    while(1){
+        if(change){
+            drawScreen();
+            setCursorPosition(1,1);
+            cout << "x";
+        }
+    }
+}
 //function defs
 int main(){
     system("cls");
 
-        
+    //this is thread creation and im a little confused
+        HANDLE hAsyncInputThread;
+        DWORD AsyncInputThreadID;
+
+        hAsyncInputThread = CreateThread(
+            NULL,
+            0,
+            getAsyncInput,
+            NULL,
+            0,
+            &AsyncInputThreadID
+        );
+    //thread creation
 
     memset(prevScreen, ' ', SCREEN_VERTICAL*SCREEN_HORIZONTAL);
 
@@ -134,7 +167,6 @@ void drawScreen(){
     change = false;
     memcpy(prevScreen, screen, SCREEN_VERTICAL*SCREEN_HORIZONTAL);
 }
-
 void gameRoutine(){
     //start     
         GameObject message("message", 50, 15," PLEASE PRESS F11 FOR FULLSCREEN  ZOOM TO FIT THE BOX              THEN PRESS Y", 32);
@@ -142,38 +174,39 @@ void gameRoutine(){
         bool ready = false;
         drawScreen();
         while(!ready){
-            if(getch() == 'y' || getch() == 'Y'){
+            if(currentInput == 'y'){
                 ready = true;
             }
         }
         memset(screen, ' ', SCREEN_VERTICAL*SCREEN_HORIZONTAL);
         message.Clean();
+    
     //update
-
-
-    int movespeed = 5;
-    GameObject player("Faseeh", 10, 40, "  000 | 00 00|  000 |   |  |  /|\\ | - | -|   |  |  / \\ | /   \\|", 6);
+    //int movespeed = 5;
+    //GameObject player("Faseeh", 10, 40, "  000 | 00 00|  000 |   |  |  /|\\ | - | -|   |  |  / \\ | /   \\|", 6);
     string groundString = "";
     for(int i=0; i<=SCREEN_HORIZONTAL;i++){groundString.append("~");}
-    GameObject ground("ground", 0, 49, groundString,150);
+    GameObject ground("ground", 0, SCREEN_VERTICAL-1, groundString,SCREEN_HORIZONTAL);
     
-    GameObject attacker("Theif", 20, 30, "  0 0 | 0   0| \\0|0/|  \\{/ |   }  |   {  |   }  |  / \\ | /   \\|", 6);
-
+    //GameObject attacker("Theif", 100, 40, "  0 0 | 0   0| \\0|0/|  \\{/ |   }  |   {  |   }  |  / \\ | /   \\|", 6);
     int timesChanged = 0;
     srand(time(0));
     int createArrowLeft = 0;
     int createArrowRight = 0;
+    
+    /*
     while(!exitTheGame){
         timesChanged++;
         drawScreen();
         if(timesChanged > 30){
             memset(screen, ' ', SCREEN_HORIZONTAL*SCREEN_VERTICAL);
             //refresh all
-            attacker.Draw();
+            //player.Draw();
+            //attacker.Draw();
             ground.Draw();
             timesChanged=0;
         }
-        if(timesChanged > 3){
+        if(timesChanged > 10){
             //attacker AI
             int attackerSpeedX = (rand()%10)/2;
             int attackerSpeedY = (rand()%10)/2;
@@ -183,30 +216,27 @@ void gameRoutine(){
             if(player.position[1] < attacker.position[1]){
                 attackerSpeedY *= -1;
             }
-            attacker.Move(attackerSpeedX, attackerSpeedY);
+            attacker.Move(attackerSpeedX, 0);
         }
         
     
-        /*if(getch() == 'w'){
+        if(currentInput == 'w'){
             player.Move(0,-movespeed/2);
-        }else if(getch() == 'a'){
+        }else if(currentInput == 'a'){
             player.Move(-movespeed, 0);
-        }else if(getch() == 's'){
+        }else if(currentInput == 's'){
             player.Move(0, movespeed/2);
-        }else if(getch() == 'd'){
+        }else if(currentInput == 'd'){
             player.Move(movespeed,0);
-        }else if(getch() == 'p'){
+        }else if(currentInput == 'p'){
             //go to break or menu
             break;
-        }else if(getch() == 'W'){
+        }else if(currentInput == 'W'){
             player.Move(0,-movespeed*2);
-        }else if(getch() == 'j'){
-            createArrowLeft++;
+        }else{
+            
         }
-        if(createArrowLeft > 0){
-            GameObject arrow("a", player.position[0], player.position[1]+4, "<----", 5);
-            arrow.Move(5,0);
-        }*/
+      
 
         //print some info
         setCursorPosition(1,1);
@@ -214,5 +244,60 @@ void gameRoutine(){
         setCursorPosition(1,2);
         cout << "Player Position: " << player.position[0] << " , "<< player.position[1];
         Sleep(45);
+    }*/
+
+    float time = 0;
+    float dt = 1;
+
+    GameObject ball("Ball1", 10, 40, "**|**", 2);
+    
+    //this is thread creation and im a little confused
+        HANDLE hAsyncDrawScreenThread;
+        DWORD AsyncDrawScreenThreadID;
+
+        hAsyncDrawScreenThread = CreateThread(
+            NULL,
+            0,
+            updateScreen,
+            NULL,
+            0,
+            &AsyncDrawScreenThreadID
+        );
+    //thread creation
+
+    GameObject player("Faseeh", 10, 65, "  000 | 00 00|  000 |   |  |  /|\\ | - | -|   |  |  / \\ | /   \\|", 6);
+    GameObject TopLeftAnchor("Anchor", 1,1,"+",1);
+    
+    while(!exitTheGame){
+        if(currentInput == 'p'){
+            break;
+        }
+        else if(currentInput == 'w'){
+            player.Move(0,-1);
+        }
+        
+        else if(currentInput == 's'){
+            player.Move(0,1);
+        }
+        
+        else if(currentInput == 'a'){
+            player.Move(-1,0);
+        }
+        
+        else if(currentInput == 'd'){
+            player.Move(1,0);
+        }
+
+        if(refresh > 5){
+            memset(screen, ' ', SCREEN_HORIZONTAL*SCREEN_VERTICAL);
+            //refresh all
+            player.Draw();
+            ground.Draw();
+            ball.Draw();
+            refresh = 0;
+        }
+
+        Sleep(30);
+        refresh++;
     }
 }
