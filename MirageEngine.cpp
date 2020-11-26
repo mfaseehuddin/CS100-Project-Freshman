@@ -46,6 +46,7 @@ void GameObject::Transform(int x, int y){
 }
 //GameObjectEnd
 
+
 //SceneManagerClass
 class SceneManager{
     public:
