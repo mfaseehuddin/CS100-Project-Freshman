@@ -9,11 +9,12 @@ using namespace std;
 const int X = 0;
 const int Y = 1;
 const int X_MAX = 150;
-const int Y_MAX = 50;
+const int Y_MAX = 40;
 const int MAX_OBJECTS = 20;
 const int REFRESH_TIME = 15;
 const int PHYSICS_REFRESH_TIME = 30;
 const float DT = 0.1; 
+
 
 bool change = true;
 char current_Input = '0';
@@ -31,7 +32,7 @@ class GameObject{
         int position[2];
         float velocity[2];
         float acceleration[2];
-        bool state_Changed = true;
+        bool exists = true;
         bool isRigidBody = false;
         GameObject(string i_id, int i_x, int i_y, string i_graphic, int i_height, int i_width);
         void Transform(int x, int y);
@@ -45,11 +46,9 @@ GameObject::GameObject(string i_id, int i_x, int i_y, string i_graphic, int i_he
     width = i_width;
 }
 void GameObject::Transform(int x, int y){
-    
         position[X] += x;
         position[Y] += y;
         change = true;
-    
 }
 //GameObjectEnd
 
@@ -109,9 +108,11 @@ void SceneManager::EraseFromScene(GameObject* object){
             x = 0;
             current_Height++;
         }else{
+            if((object->position[Y]) + current_Height > 0 && (object->position[X]) + x>0){
             scene[(object->position[Y]) + current_Height][(object->position[X]) + x] = ' ';
             x++;
             graphicIndex++;
+            }
         }
         
     }
@@ -229,6 +230,9 @@ DWORD WINAPI Update(LPVOID lpParam){
                     //manually erasing the object
                     Transform((*game_object)->velocity[X]*DT, (*game_object)->velocity[Y]*DT, (*game_object), active_Scene);
                 }
+                if((*game_object)->position[X] <= 0 || (*game_object)->position[X] >= X_MAX){
+                    (*game_object)->velocity[X] = -0.5*(*game_object)->velocity[X];
+                }
             }
         }
 
@@ -301,11 +305,9 @@ void gameRoutine(){
     Scene1.Debug();    
     //Creating Bounding Box
     //begin the update Threads
-    {
     HANDLE AsyncUpdate;
     DWORD AsyncUpdateThreadID;
     AsyncUpdate = CreateThread(NULL, 0, Update, NULL, 0, &AsyncUpdateThreadID);
-    }
 
     //UpdateThreadStarted
     
@@ -343,6 +345,8 @@ void gameRoutine(){
             Sleep(100);
             if(current_Input == 'y'){
                 break;
+            }else if(current_Input == 'p'){
+                exit(1);
             }
 
         }
@@ -355,39 +359,39 @@ void gameRoutine(){
         //local game related variables
         main_player.isRigidBody = true;
         int move_Speed = 1;
-        string ball_Id = "ball0";
+        /*string ball_Id = "ball0";
         int number_of_balls = 65;
         bool new_ball = false;
-        vector<GameObject>balls;
-        balls.reserve(50);
+        vector<GameObject>balls;*/
 
         while(1){
-            if(current_Input == 'w'){
+            if(current_Input == 'w' && main_player.position[Y] > 1){
                 if(main_player.position[X] > 0 && main_player.position[X] < X_MAX && main_player.position[Y] > 0 && main_player.position[Y] < Y_MAX){
                 //
                 Transform(0,-move_Speed, &main_player, &Scene1);
                 main_player.velocity[Y] = 0;
                 }
-            }else if(current_Input == 's'){
+            }else if(current_Input == 's' && main_player.position[Y] < Y_MAX - main_player.height){
                 Transform(0,move_Speed, &main_player, &Scene1);
             }else if(current_Input == 'd'){
                 Transform(move_Speed, 0, &main_player, &Scene1);
-            }else if(current_Input == 'a'){
+            }else if(current_Input == 'a' && main_player.position[X] > 1){
                 Transform(-move_Speed, 0, &main_player, &Scene1);
-            }else if(current_Input == 'p'){break;}
+            }else if(current_Input == 'p'){exit(0);}
             
-            else if(current_Input == 'b'){
+            /*else if(current_Input == 'b'){
                 //balls.emplace(GameObject(ball_Id, main_player.position[X], main_player.position[Y], ball_Id,1,5));
                 ball_Id[ball_Id.length()-1] = number_of_balls;
-                GameObject ball(ball_Id, main_player.position[X], main_player.position[Y], ball_Id,1,5);
+                GameObject ball(ball_Id, main_player.position[X], main_player.position[Y], ball_Id,2,5);
                 balls.push_back(ball);
-                Sleep(100);
                 number_of_balls++;
                 balls[balls.size()-1].isRigidBody=true;
-                balls[balls.size()-1].velocity[X]=50;
+                    balls[balls.size()-1].velocity[X]=50;
                 MainWindow.GetActiveScene()->AddObject(&balls[balls.size()-1]);
-                
-            }
+                Sleep(2500);
+                MainWindow.GetActiveScene()->RemoveObject(ball_Id);
+                balls.pop_back();
+            }*/
 
 
             Sleep(REFRESH_TIME);
