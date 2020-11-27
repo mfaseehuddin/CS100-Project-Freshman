@@ -9,10 +9,10 @@ using namespace std;
 const int X = 0;
 const int Y = 1;
 const int X_MAX = 150;
-const int Y_MAX = 40;
+const int Y_MAX = 35;
 const int MAX_OBJECTS = 20;
 const int REFRESH_TIME = 15;
-const int PHYSICS_REFRESH_TIME = 30;
+const int PHYSICS_REFRESH_TIME = 15;
 const float DT = 0.1; 
 
 
@@ -91,9 +91,10 @@ void SceneManager::DrawOnScene(GameObject* object){
             x = 0;
             current_Height++;
         }else{
-            scene[(object->position[Y]) + current_Height][(object->position[X]) + x] = current_Graphic[graphicIndex];
-            x++;
-            graphicIndex++;
+            //if((object->position[Y]) >= 0 && (object->position[Y]) + current_Height < Y_MAX && (object->position[X]) + x >= 0 && (object->position[X]) + x < X_MAX)
+                scene[(object->position[Y]) + current_Height][(object->position[X]) + x] = current_Graphic[graphicIndex];
+                x++;
+                graphicIndex++;
         }
         
     }
@@ -108,11 +109,9 @@ void SceneManager::EraseFromScene(GameObject* object){
             x = 0;
             current_Height++;
         }else{
-            if((object->position[Y]) + current_Height > 0 && (object->position[X]) + x>0){
             scene[(object->position[Y]) + current_Height][(object->position[X]) + x] = ' ';
             x++;
             graphicIndex++;
-            }
         }
         
     }
@@ -245,7 +244,7 @@ DWORD WINAPI Update(LPVOID lpParam){
 DWORD WINAPI getAsyncInput(LPVOID lpParam){
     while(1){
         current_Input = getch();
-        Sleep(REFRESH_TIME);
+        Sleep(REFRESH_TIME*2);
         current_Input = '0';
     }
 }
@@ -302,7 +301,7 @@ int main(){
 
 void gameRoutine(){
     
-    Scene1.Debug();    
+    //Scene1.Debug();    
     //Creating Bounding Box
     //begin the update Threads
     HANDLE AsyncUpdate;
@@ -332,25 +331,19 @@ void gameRoutine(){
         GameObject information("information", 10, 10, "Hello, Welcome to a Game Made in Mirage Engine.Press F11 to make the terminal Fullscreen.     Hold Y to Start.                               Press P at anytime to quit the game.", 5, 47);
         Scene1.AddObject(&information);
         
-        GameObject main_player("mainplayer", 70, 10, "  000  00 00  000    |    /|\\  / | \\   |    / \\  /   \\", 11, 6);
+        GameObject main_player("mainplayer", 70, 10, "  000  00 00  000    |    /|\\  / | \\   |    / \\  /   \\", 10, 6);
         Scene1.AddObject(&main_player);
 
         bool command_to_continue = false;
 
         while(!command_to_continue){
-            
-            Transform(0,1,&main_player, &Scene1);
-            Sleep(100);
-            Transform(0,-1,&main_player, &Scene1);
-            Sleep(100);
             if(current_Input == 'y'){
                 break;
             }else if(current_Input == 'p'){
-                exit(1);
+                exit(0);
             }
-
+            Sleep(REFRESH_TIME);
         }
-
         Scene1.RemoveObject("information");
 
     //Start End
@@ -363,17 +356,21 @@ void gameRoutine(){
         int number_of_balls = 65;
         bool new_ball = false;
         vector<GameObject>balls;*/
+        
+        GameObject bigBox("bigBox", 80,10, "*****", 1,5);
+        Scene1.AddObject(&bigBox);
 
         while(1){
             if(current_Input == 'w' && main_player.position[Y] > 1){
                 if(main_player.position[X] > 0 && main_player.position[X] < X_MAX && main_player.position[Y] > 0 && main_player.position[Y] < Y_MAX){
                 //
-                Transform(0,-move_Speed, &main_player, &Scene1);
                 main_player.velocity[Y] = 0;
+                Transform(0,-move_Speed, &main_player, &Scene1);
+                
                 }
             }else if(current_Input == 's' && main_player.position[Y] < Y_MAX - main_player.height){
                 Transform(0,move_Speed, &main_player, &Scene1);
-            }else if(current_Input == 'd'){
+            }else if(current_Input == 'd' && main_player.position[X] < X_MAX - main_player.width - 1){
                 Transform(move_Speed, 0, &main_player, &Scene1);
             }else if(current_Input == 'a' && main_player.position[X] > 1){
                 Transform(-move_Speed, 0, &main_player, &Scene1);
