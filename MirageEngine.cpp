@@ -9,14 +9,14 @@ using namespace std;
 const int X = 0;
 const int Y = 1;
 const int X_MAX = 150;
-const int Y_MAX = 35;
+const int Y_MAX = 30;
 const int MAX_OBJECTS = 20;
 const int REFRESH_TIME = 15;
-const int PHYSICS_REFRESH_TIME = 15;
 const float DT = 0.1; 
+const int X_BUFFER_FOR_OBJECT = 10;
 
 
-bool change = true;
+bool scene_Change = true;
 char current_Input = '0';
 float gravity_vector[2] = {0,0.5};
 
@@ -29,9 +29,9 @@ class GameObject{
         string graphic;
         int height;
         int width;
-        int position[2];
-        float velocity[2];
-        float acceleration[2];
+        int position[2] = {0,0};
+        float velocity[2] = {0,0};
+        float acceleration[2] = {0,0};
         bool exists = true;
         bool isRigidBody = false;
         GameObject(string i_id, int i_x, int i_y, string i_graphic, int i_height, int i_width);
@@ -48,7 +48,6 @@ GameObject::GameObject(string i_id, int i_x, int i_y, string i_graphic, int i_he
 void GameObject::Transform(int x, int y){
         position[X] += x;
         position[Y] += y;
-        change = true;
 }
 //GameObjectEnd
 
@@ -83,22 +82,35 @@ void SceneManager::RemoveObject(string object_ID){
     }
 }
 void SceneManager::DrawOnScene(GameObject* object){
+    string& current_Graphic = object->graphic;
     int current_Height = 0;
     int x = 0;
-    string& current_Graphic = object->graphic;
     for(int graphicIndex = 0; graphicIndex < current_Graphic.length();){
         if(x == object->width){
             x = 0;
             current_Height++;
         }else{
             //if((object->position[Y]) >= 0 && (object->position[Y]) + current_Height < Y_MAX && (object->position[X]) + x >= 0 && (object->position[X]) + x < X_MAX)
-                scene[(object->position[Y]) + current_Height][(object->position[X]) + x] = current_Graphic[graphicIndex];
+                int currY = (object->position[Y]) + current_Height;
+                int currX = (object->position[X]) + x;
+                if(currY >= 0 && currX >= 0  &&  currX <= X_MAX && currY <= Y_MAX)
+                {scene[currY][currX] = current_Graphic[graphicIndex];
                 x++;
-                graphicIndex++;
+                graphicIndex++;}
+                else{
+                    scene[5][5] = 'E';
+                    scene[5][6] = 'R';
+                    scene[5][7] = 'R';
+                    scene[5][8] = 'O';
+                    scene[5][9] = 'R';
+                    
+                    return;
+                }
         }
         
     }
-    change = true;
+    scene_Change = true;
+   
 }
 void SceneManager::EraseFromScene(GameObject* object){
         int current_Height = 0;
@@ -109,13 +121,27 @@ void SceneManager::EraseFromScene(GameObject* object){
             x = 0;
             current_Height++;
         }else{
-            scene[(object->position[Y]) + current_Height][(object->position[X]) + x] = ' ';
-            x++;
-            graphicIndex++;
+            
+                int currY = (object->position[Y]) + current_Height;
+                int currX = (object->position[X]) + x;
+                if(currY >= 0 && currX >= 0  &&  currX <= X_MAX && currY <= Y_MAX){
+                    scene[currY][currX] = ' ';
+                    x++;
+                    graphicIndex++;
+                }else{
+                    scene[5][5] = 'E';
+                    scene[5][6] = 'R';
+                    scene[5][7] = 'R';
+                    scene[5][8] = 'O';
+                    scene[5][9] = 'R';
+                    
+                    return;
+                }
         }
         
     }
-    change = true;
+    scene_Change = true;
+   
 }
 void SceneManager::Debug(){
     for(int y = 0; y < Y_MAX; y++){
@@ -147,6 +173,7 @@ Window::Window(){
 }
 void Window::SetActiveScene(SceneManager* new_Scene){
     active_Scene = new_Scene;
+    new_Scene->gameObjects.reserve(50);
 }
 SceneManager* Window::GetActiveScene(){
     if(active_Scene != NULL){
@@ -178,10 +205,9 @@ void Window::DisplayActiveScreen(SceneManager* frame){
         printf("\n");
     }
     memcpy(prev_Screen_Buffer, frame->scene, X_MAX*Y_MAX);
-    
     SetCursorPosition(1,1);
     cout << "x";
-    change = false;
+    scene_Change = false;
 
 }
 //WindowCLASSEND
@@ -189,6 +215,7 @@ void Window::DisplayActiveScreen(SceneManager* frame){
 //GLOBAL VARIABLES
 Window MainWindow;
 SceneManager Scene1;
+
 
 //functionProts
 void Transform(int x, int y, GameObject* target_Object, SceneManager* current_Scene){
@@ -198,79 +225,148 @@ void Transform(int x, int y, GameObject* target_Object, SceneManager* current_Sc
     target_Object->Transform(x,y);
     //Draw the object back on the screen
     current_Scene->DrawOnScene(target_Object);
-    change = true;
     //This gives a little buffer time to the computer
-    Sleep(REFRESH_TIME);
+    //Sleep(REFRESH_TIME);
 }
 
 
 //Async windows Funcs
 DWORD WINAPI Update(LPVOID lpParam){
     while(1){
-        if(change){
-            /*SceneManager* current_Scene = MainWindow.GetActiveScene();
-            for(auto game_object = (*current_Scene).gameObjects.begin(); game_object != (*current_Scene).gameObjects.end(); ++game_object){
-                    (*current_Scene).DrawOnScene(*game_object);
-                
-            }*/
-            MainWindow.DisplayActiveScreen(MainWindow.GetActiveScene());
-        }
-
         SceneManager* active_Scene = MainWindow.GetActiveScene();
-        
+        //PhysicsSystem
         for(auto game_object = active_Scene->gameObjects.begin(); game_object != active_Scene->gameObjects.end(); ++game_object){
             if((*game_object)->isRigidBody){
                 if((*game_object)->position[Y] < Y_MAX  - (*game_object)->height){
                     //updateThePhysic of the object
                     (*game_object)->velocity[X] += (*game_object)->acceleration[X] + gravity_vector[X];
                     (*game_object)->velocity[Y] += (*game_object)->acceleration[Y] + gravity_vector[Y];
-
-                    //dx = (*game_object)->velocity[X]*DT
-                    //manually erasing the object
-                    Transform((*game_object)->velocity[X]*DT, (*game_object)->velocity[Y]*DT, (*game_object), active_Scene);
+                    int posX = (*game_object)->velocity[X]*DT;
+                    int posY = (*game_object)->velocity[Y]*DT;
+                    Transform(posX, posY, (*game_object), active_Scene);
+                }else{
+                    (*game_object)->velocity[X] += (*game_object)->acceleration[X] + gravity_vector[X];
+                    int posX = (*game_object)->velocity[X]*DT;
+                    Transform(posX, 0, (*game_object), active_Scene);
                 }
-                if((*game_object)->position[X] <= 0 || (*game_object)->position[X] >= X_MAX){
-                    (*game_object)->velocity[X] = -0.5*(*game_object)->velocity[X];
+                if((*game_object)->position[X] <= X_BUFFER_FOR_OBJECT|| (*game_object)->position[X] >= X_MAX - (*game_object)->width - X_BUFFER_FOR_OBJECT){
+                    (*game_object)->velocity[X] = -((*game_object)->velocity[X]);
                 }
             }
         }
-
-
+        //PhysicsSystem
+        if(scene_Change){
+            MainWindow.DisplayActiveScreen(MainWindow.GetActiveScene());
+        }
     //This gives a little buffer time to the computer
-
-    }
-   
+    Sleep(REFRESH_TIME);
+    } 
 }
 DWORD WINAPI getAsyncInput(LPVOID lpParam){
     while(1){
         current_Input = getch();
-        Sleep(REFRESH_TIME*2);
+        Sleep(100);
         current_Input = '0';
+        Sleep(REFRESH_TIME*2);
+        
     }
 }
-DWORD WINAPI UpdatePhysics(LPVOID lpParam){
-    while(1){
-        //StepWise Euler Equation is used to simulate gravity
-        //All rididBodies are going to be updated
-        SceneManager* active_Scene = MainWindow.GetActiveScene();
-        
-        for(auto game_object = active_Scene->gameObjects.begin(); game_object != active_Scene->gameObjects.end(); ++game_object){
-            if((*game_object)->isRigidBody){
-                if((*game_object)->position[Y] < (Y_MAX-1) - (*game_object)->height){
-                    //updateThePhysic of the object
-                    (*game_object)->velocity[X] += (*game_object)->acceleration[X];
-                    (*game_object)->velocity[Y] += (*game_object)->acceleration[Y];
 
-                    //dx = (*game_object)->velocity[X]*DT
-                    //manually erasing the object
-                    Transform((*game_object)->velocity[X]*DT, (*game_object)->velocity[Y]*DT, (*game_object), active_Scene);
-                }
+//User Defined Async Funcs for GameService
+        vector<GameObject> balls;
+        string ball_Id = "ball0";
+        int number_of_balls = 65;
+        bool bulletFire = false;
+        bool destroyBullet = false;
+
+        int enemy_x = X_MAX - 50;
+        int enemy_y = 10;
+
+        int main_Player_Position[2]= {0,0};
+
+        int Enemy_Number = 65;
+        string Enemy_Spawn_ID = "enemy0";
+        bool Spawn_Enemy = false;
+        vector<GameObject> Enemy_Spawn_Manager;
+
+DWORD WINAPI enemyController(LPVOID lpParam){
+    while(1){
+        if(Spawn_Enemy){
+            
+            //EnemyIDSetting And Incrementing
+            Enemy_Spawn_ID[Enemy_Spawn_ID.length()-1] = Enemy_Number;
+            Enemy_Number++;
+
+            //Producing Random Enemy COORDS
+
+
+            //Producing Enemy And Putting in 
+            GameObject new_Enemy(Enemy_Spawn_ID, enemy_x, enemy_y, "  0 0  0   0 \\0|0/  \\{/    }     {     }    / \\  /   \\", 10, 6);
+            new_Enemy.isRigidBody = true;
+
+            Enemy_Spawn_Manager.push_back(new_Enemy);
+            
+            MainWindow.GetActiveScene()->AddObject(&Enemy_Spawn_Manager[Enemy_Spawn_Manager.size()-1]);
+            Spawn_Enemy = false;
+        }
+        
+
+        //Enemy Kill and Collision Detection
+        int nballs = balls.size();
+        int nenemies = Enemy_Spawn_Manager.size();
+
+        if(nballs > 0 && nenemies > 0){
+            int ballX = (*balls.begin()).position[X];
+            int enemyX = (*Enemy_Spawn_Manager.begin()).position[X]; 
+            int enemyY = (*Enemy_Spawn_Manager.begin()).position[Y];
+            if(ballX >= enemyX){
+                GameObject hit("hit", enemyX-1, enemyY, "ouch",2,1 );
+                MainWindow.GetActiveScene()->AddObject(&hit);
+                Sleep(200);        
+                MainWindow.GetActiveScene()->RemoveObject("hit");
+                MainWindow.GetActiveScene()->RemoveObject(Enemy_Spawn_ID);
+                Enemy_Spawn_Manager.pop_back();
+                Sleep(100);
+                GameObject hit2("hit2", enemyX, enemyY, "haw mujhe mar diya",2,20 );
+                MainWindow.GetActiveScene()->AddObject(&hit2);
+                Sleep(100);
+                MainWindow.GetActiveScene()->RemoveObject("hit2");
             }
         }
-
-        Sleep(REFRESH_TIME*2);
+        
+        Sleep(50);
     }
 }
+
+DWORD WINAPI bulletController(LPVOID lpParam){
+    while(1){
+        if(bulletFire){
+            ball_Id[ball_Id.length()-1] = number_of_balls;
+            number_of_balls++;
+
+            GameObject ball(ball_Id, main_Player_Position[X], main_Player_Position[Y], "____", 2, 5);
+            ball.isRigidBody=true;
+            ball.velocity[X]=50;
+            
+            balls.push_back(ball);
+            
+            MainWindow.GetActiveScene()->AddObject(&balls[balls.size()-1]);
+            bulletFire = false;
+            Sleep(500);
+
+
+            
+            MainWindow.GetActiveScene()->RemoveObject(ball_Id);
+                balls.pop_back();
+
+            
+        }
+        //Check for collision with enemy
+
+        Sleep(REFRESH_TIME);
+    }
+}
+
 //AsyncHelpFunc
 
 //function protos
@@ -294,24 +390,22 @@ int main(){
             &AsyncInputThreadID
         );
     //thread creation
+    srand(time(0));
     gameRoutine();
 
     return 0;
 }
 
 void gameRoutine(){
-    
-    //Scene1.Debug();    
-    //Creating Bounding Box
     //begin the update Threads
     HANDLE AsyncUpdate;
     DWORD AsyncUpdateThreadID;
     AsyncUpdate = CreateThread(NULL, 0, Update, NULL, 0, &AsyncUpdateThreadID);
-
     //UpdateThreadStarted
     
     //Start    
         MainWindow.SetActiveScene(&Scene1);
+        //Creating Bounding Box
         string boundingBox="";
         for(int y=0; y < Y_MAX; y++){
             for(int x=0; x < X_MAX; x++){
@@ -345,53 +439,58 @@ void gameRoutine(){
             Sleep(REFRESH_TIME);
         }
         Scene1.RemoveObject("information");
-
     //Start End
 
     //Update
         //local game related variables
         main_player.isRigidBody = true;
         int move_Speed = 1;
-        /*string ball_Id = "ball0";
-        int number_of_balls = 65;
-        bool new_ball = false;
-        vector<GameObject>balls;*/
-        
-        GameObject bigBox("bigBox", 80,10, "*****", 1,5);
-        Scene1.AddObject(&bigBox);
+       
 
+        //Public Context For The GameLoop
+        
+
+
+        //Begin Enemy Spawning And Handling
+        HANDLE hEnemyController;
+        DWORD EnemyControllerThreadID;
+
+        hEnemyController = CreateThread(NULL, 0, enemyController, NULL, 0, &EnemyControllerThreadID);
+        //Begin Bullet Spawning And Collision Checking
+        HANDLE hBulletController;
+        DWORD BulletControllerThreadID;
+
+        hBulletController = CreateThread(NULL, 0, bulletController, NULL, 0, &BulletControllerThreadID);
+        
+
+        //GameLoop
         while(1){
+            
+            //InputBasedChangeBLOCK
             if(current_Input == 'w' && main_player.position[Y] > 1){
                 if(main_player.position[X] > 0 && main_player.position[X] < X_MAX && main_player.position[Y] > 0 && main_player.position[Y] < Y_MAX){
-                //
-                main_player.velocity[Y] = 0;
-                Transform(0,-move_Speed, &main_player, &Scene1);
-                
+                    main_player.velocity[Y] = 0;
+                    Transform(0,-move_Speed, &main_player, &Scene1);
                 }
-            }else if(current_Input == 's' && main_player.position[Y] < Y_MAX - main_player.height){
-                Transform(0,move_Speed, &main_player, &Scene1);
-            }else if(current_Input == 'd' && main_player.position[X] < X_MAX - main_player.width - 1){
-                Transform(move_Speed, 0, &main_player, &Scene1);
-            }else if(current_Input == 'a' && main_player.position[X] > 1){
-                Transform(-move_Speed, 0, &main_player, &Scene1);
-            }else if(current_Input == 'p'){exit(0);}
+            }else if(current_Input == 's'){main_player.velocity[X] = 0;}
+            else if(current_Input == 'd' && main_player.position[X] < X_MAX - main_player.width - 1){main_player.velocity[X] = 10;}
+            else if(current_Input == 'a' && main_player.position[X] > 1){main_player.velocity[X] = -10;}
+            else if(current_Input == 'p'){exit(0);}
+            else if(current_Input == 'b'){
+                main_Player_Position[X] = main_player.position[X];
+                main_Player_Position[Y] = main_player.position[Y];
+                bulletFire = true;
+                Sleep(500);
+            }else if(current_Input == 'e'){
+                main_Player_Position[X] = main_player.position[X];
+                main_Player_Position[Y] = main_player.position[Y];
+                Spawn_Enemy = true;
+                Sleep(500);
+            }
             
-            /*else if(current_Input == 'b'){
-                //balls.emplace(GameObject(ball_Id, main_player.position[X], main_player.position[Y], ball_Id,1,5));
-                ball_Id[ball_Id.length()-1] = number_of_balls;
-                GameObject ball(ball_Id, main_player.position[X], main_player.position[Y], ball_Id,2,5);
-                balls.push_back(ball);
-                number_of_balls++;
-                balls[balls.size()-1].isRigidBody=true;
-                    balls[balls.size()-1].velocity[X]=50;
-                MainWindow.GetActiveScene()->AddObject(&balls[balls.size()-1]);
-                Sleep(2500);
-                MainWindow.GetActiveScene()->RemoveObject(ball_Id);
-                balls.pop_back();
-            }*/
-
 
             Sleep(REFRESH_TIME);
+            
         }
     //Per Frame Update
 
