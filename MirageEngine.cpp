@@ -29,6 +29,7 @@ class GameObject{
         string graphic;
         int height;
         int width;
+        int health = 100;
         int position[2] = {0,0};
         float velocity[2] = {0,0};
         float acceleration[2] = {0,0};
@@ -215,7 +216,7 @@ void Window::DisplayActiveScreen(SceneManager* frame){
 //GLOBAL VARIABLES
 Window MainWindow;
 SceneManager Scene1;
-
+SceneManager Scene2;
 
 //functionProts
 void Transform(int x, int y, GameObject* target_Object, SceneManager* current_Scene){
@@ -310,27 +311,30 @@ DWORD WINAPI enemyController(LPVOID lpParam){
             Spawn_Enemy = false;
         }
         
-
         //Enemy Kill and Collision Detection
         int nballs = balls.size();
         int nenemies = Enemy_Spawn_Manager.size();
 
         if(nballs > 0 && nenemies > 0){
-            int ballX = (*balls.begin()).position[X];
-            int enemyX = (*Enemy_Spawn_Manager.begin()).position[X]; 
-            int enemyY = (*Enemy_Spawn_Manager.begin()).position[Y];
-            if(ballX >= enemyX){
+            int &ballX = (*balls.begin()).position[X];
+            int &ballY = (*balls.begin()).position[Y];
+            int &enemyX = (*Enemy_Spawn_Manager.begin()).position[X]; 
+            int &enemyY = (*Enemy_Spawn_Manager.begin()).position[Y];
+            if(ballX >= enemyX && ballX <= enemy_x+5 && ballY >= enemy_y-2){
                 GameObject hit("hit", enemyX-1, enemyY, "ouch",2,1 );
                 MainWindow.GetActiveScene()->AddObject(&hit);
                 Sleep(200);        
                 MainWindow.GetActiveScene()->RemoveObject("hit");
+                (*Enemy_Spawn_Manager.begin()).health += -40;
+                GameObject hit2("hit2", enemyX, enemyY-1, "-40 Health",2,20 );
+                MainWindow.GetActiveScene()->AddObject(&hit2);
+                Sleep(200);
+                MainWindow.GetActiveScene()->RemoveObject("hit2");
+            }
+            if((*Enemy_Spawn_Manager.begin()).health <= 0){
                 MainWindow.GetActiveScene()->RemoveObject(Enemy_Spawn_ID);
                 Enemy_Spawn_Manager.pop_back();
-                Sleep(100);
-                GameObject hit2("hit2", enemyX, enemyY, "haw mujhe mar diya",2,20 );
-                MainWindow.GetActiveScene()->AddObject(&hit2);
-                Sleep(100);
-                MainWindow.GetActiveScene()->RemoveObject("hit2");
+                
             }
         }
         
@@ -448,8 +452,9 @@ void gameRoutine(){
        
 
         //Public Context For The GameLoop
-        
-
+        srand(time(0));
+        int rand_Cycle = 0;
+        int cycle = 0;
 
         //Begin Enemy Spawning And Handling
         HANDLE hEnemyController;
@@ -475,7 +480,27 @@ void gameRoutine(){
             }else if(current_Input == 's'){main_player.velocity[X] = 0;}
             else if(current_Input == 'd' && main_player.position[X] < X_MAX - main_player.width - 1){main_player.velocity[X] = 10;}
             else if(current_Input == 'a' && main_player.position[X] > 1){main_player.velocity[X] = -10;}
-            else if(current_Input == 'p'){exit(0);}
+            else if(current_Input == 'p'){
+                //exit sequence
+                /*
+                GameObject ExitQuestion("exit", 5,5, "Are you sure you want to exit?If yes press Y, if no press N", 1,40);
+                MainWindow.GetActiveScene()->AddObject(&ExitQuestion);
+                bool actionTaken = false;
+
+                while(!actionTaken){
+                    if(current_Input == 'Y'){
+                        exit(0);
+                    }else if(current_Input == 'N'){
+                        //MainWindow.GetActiveScene()->RemoveObject("exit");
+                        actionTaken = true;
+                        break;
+                    }
+                Sleep(50);
+                
+                }
+                */
+                
+                }
             else if(current_Input == 'b'){
                 main_Player_Position[X] = main_player.position[X];
                 main_Player_Position[Y] = main_player.position[Y];
@@ -488,7 +513,12 @@ void gameRoutine(){
                 Sleep(500);
             }
             
-
+            if(Enemy_Spawn_Manager.size() == 0 && cycle >= rand_Cycle){
+                Spawn_Enemy = true;
+                cycle = 0;
+                rand_Cycle = rand()%1000;
+            }
+            cycle++;
             Sleep(REFRESH_TIME);
             
         }
