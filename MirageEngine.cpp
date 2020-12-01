@@ -285,6 +285,7 @@ DWORD WINAPI getAsyncInput(LPVOID lpParam){
 
         int main_Player_Position[2]= {0,0};
 
+        int Enemy_Move_Speed = 15;
         int Enemy_Number = 65;
         string Enemy_Spawn_ID = "enemy0";
         bool Spawn_Enemy = false;
@@ -304,7 +305,7 @@ DWORD WINAPI enemyController(LPVOID lpParam){
             //Producing Enemy And Putting in 
             GameObject new_Enemy(Enemy_Spawn_ID, enemy_x, enemy_y, "  0 0  0   0 \\0|0/  \\{/    }     {     }    / \\  /   \\", 10, 6);
             new_Enemy.isRigidBody = true;
-
+            new_Enemy.velocity[X] = 3;
             Enemy_Spawn_Manager.push_back(new_Enemy);
             
             MainWindow.GetActiveScene()->AddObject(&Enemy_Spawn_Manager[Enemy_Spawn_Manager.size()-1]);
@@ -320,7 +321,7 @@ DWORD WINAPI enemyController(LPVOID lpParam){
             int &ballY = (*balls.begin()).position[Y];
             int &enemyX = (*Enemy_Spawn_Manager.begin()).position[X]; 
             int &enemyY = (*Enemy_Spawn_Manager.begin()).position[Y];
-            if(ballX >= enemyX && ballX <= enemy_x+5 && ballY >= enemy_y-2){
+            if(ballX >= enemyX && ballX <= enemy_x+2 && ballY > enemy_y-3){
                 GameObject hit("hit", enemyX-1, enemyY, "ouch",2,1 );
                 MainWindow.GetActiveScene()->AddObject(&hit);
                 Sleep(200);        
@@ -328,14 +329,25 @@ DWORD WINAPI enemyController(LPVOID lpParam){
                 (*Enemy_Spawn_Manager.begin()).health += -40;
                 GameObject hit2("hit2", enemyX, enemyY-1, "-40 Health",2,20 );
                 MainWindow.GetActiveScene()->AddObject(&hit2);
-                Sleep(200);
+                Sleep(300);
                 MainWindow.GetActiveScene()->RemoveObject("hit2");
+            }
+            if((*Enemy_Spawn_Manager.begin()).health > 0){
+                if(main_Player_Position[X] >= (*Enemy_Spawn_Manager.begin()).position[X]){
+                    (*Enemy_Spawn_Manager.begin()).velocity[X] = Enemy_Move_Speed;
+                } else if(main_Player_Position[X] <= (*Enemy_Spawn_Manager.begin()).position[X]){
+                    (*Enemy_Spawn_Manager.begin()).velocity[X] = -Enemy_Move_Speed;
+                }
             }
             if((*Enemy_Spawn_Manager.begin()).health <= 0){
                 MainWindow.GetActiveScene()->RemoveObject(Enemy_Spawn_ID);
                 Enemy_Spawn_Manager.pop_back();
-                
+                GameObject hit3("hit3", enemyX, enemyY-1, "OK IM DED",2,20 );
+                MainWindow.GetActiveScene()->AddObject(&hit3);
+                Sleep(200);
+                MainWindow.GetActiveScene()->RemoveObject("hit3");
             }
+
         }
         
         Sleep(50);
@@ -505,16 +517,16 @@ void gameRoutine(){
                 main_Player_Position[X] = main_player.position[X];
                 main_Player_Position[Y] = main_player.position[Y];
                 bulletFire = true;
-                Sleep(500);
+                Sleep(200);
             }else if(current_Input == 'e'){
+
+            }
+            
+            if(Enemy_Spawn_Manager.size() == 0 && cycle >= rand_Cycle){
                 main_Player_Position[X] = main_player.position[X];
                 main_Player_Position[Y] = main_player.position[Y];
                 Spawn_Enemy = true;
                 Sleep(500);
-            }
-            
-            if(Enemy_Spawn_Manager.size() == 0 && cycle >= rand_Cycle){
-                Spawn_Enemy = true;
                 cycle = 0;
                 rand_Cycle = rand()%1000;
             }
