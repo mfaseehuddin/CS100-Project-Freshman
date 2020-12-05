@@ -5,6 +5,9 @@
         "chrono": "cpp",
         "new": "cpp",
         "optional": "cpp",
-        "iostream": "cpp"
+        "iostream": "cpp",
+        "iosfwd": "cpp",
+        "limits": "cpp",
+        "functional": "cpp"
     }
 }
