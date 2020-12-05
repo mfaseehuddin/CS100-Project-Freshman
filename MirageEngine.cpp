@@ -81,10 +81,9 @@ void SceneManager::AddObject(GameObject* object){
 void SceneManager::RemoveObject(string object_ID){
     for(auto game_object = gameObjects.begin(); game_object != gameObjects.end(); ++game_object){
         if ((*game_object)->id == object_ID){
-            
             EraseFromScene(*game_object);
-            //delete(*game_object);
             gameObjects.erase(game_object);
+            //delete(*game_object);
             break;
         }
     }
@@ -225,7 +224,7 @@ void Window::DisplayActiveScreen(SceneManager* frame){
     }
     memcpy(prev_Screen_Buffer, frame->scene, X_MAX*Y_MAX);
     SetCursorPosition(1,1);
-    cout << "x";
+    printf("g");
     scene_Change = false;
 
 }
@@ -291,9 +290,6 @@ DWORD WINAPI getAsyncInput(LPVOID lpParam){
         
     }
 }
-
-
-
 DWORD WINAPI bulletController(LPVOID lpParam){
     GameObject* main_Player = MainWindow.GetActiveScene()->getObject("mainplayer");
     GameObject* bullet = NULL;
@@ -303,10 +299,16 @@ DWORD WINAPI bulletController(LPVOID lpParam){
         enemy = MainWindow.GetActiveScene()->getObject("E0");
         if(bullet != NULL && enemy != NULL){
             
-            if(abs(bullet->position[X] - enemy->position[X]) < 2.5 ){
-                MainWindow.GetActiveScene()->getObject("E0")->health += -10;
+            if(abs(bullet->position[X] - enemy->position[X]) < 2.5 && abs(bullet->position[Y] - enemy->position[Y]) < 2.5){
+                MainWindow.GetActiveScene()->getObject("E0")->health += -30;
                 }
             if(MainWindow.GetActiveScene()->getObject("E0")->health <= 0){
+                GameObject Hit("Hit", enemy->position[X], enemy->position[Y]-3, "BOOM", 4,4);
+                Hit.isRigidBody=true;
+                MainWindow.GetActiveScene()->AddObject(&Hit);
+                Sleep(400);
+                MainWindow.GetActiveScene()->DrawOnScene(&Hit);
+                MainWindow.GetActiveScene()->RemoveObject("Hit");
                 MainWindow.GetActiveScene()->RemoveObject("E0");
                 current_Enemies--;
             }
@@ -446,7 +448,7 @@ void gameRoutine(){
             }else if(current_Input == 'f'){
             }
 
-            if(current_Enemies < 1){
+            if(current_Enemies < 1 && cycle > rand_Cycle){
                 int random_X_Pos = 50;
 
                 GameObject* new_Enemy_Ptr = new GameObject(enemyID,random_X_Pos, 10, "  0 0  0   0 \\0|0/  \\{/    }     {     }    / \\  /   \\", 10, 6);
