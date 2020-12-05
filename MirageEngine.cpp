@@ -495,6 +495,7 @@ void gameRoutine(){
             else if(current_Input == 'p'){
                 //exit sequence
                 /*
+               
                 GameObject ExitQuestion("exit", 5,5, "Are you sure you want to exit?If yes press Y, if no press N", 1,40);
                 MainWindow.GetActiveScene()->AddObject(&ExitQuestion);
                 bool actionTaken = false;
