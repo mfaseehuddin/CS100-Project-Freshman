@@ -8,6 +8,8 @@
         "iostream": "cpp",
         "iosfwd": "cpp",
         "limits": "cpp",
-        "functional": "cpp"
+        "functional": "cpp",
+        "list": "cpp",
+        "unordered_map": "cpp"
     }
 }
