@@ -10,6 +10,9 @@
         "limits": "cpp",
         "functional": "cpp",
         "list": "cpp",
-        "unordered_map": "cpp"
+        "unordered_map": "cpp",
+        "fstream": "cpp",
+        "sstream": "cpp",
+        "streambuf": "cpp"
     }
 }

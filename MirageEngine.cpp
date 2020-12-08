@@ -34,7 +34,7 @@ class GameObject{
         int position[2] = {0,0};
         float velocity[2] = {0,0};
         float acceleration[2] = {0,0};
-        bool exists = true;
+        bool single_Change = false;
         bool isRigidBody = false;
         GameObject(string i_id, int i_x, int i_y, string i_graphic, int i_height, int i_width);
         void Transform(int x, int y);
@@ -219,7 +219,7 @@ void Window::DisplayActiveScreen(SceneManager* frame){
             SetCursorPosition(x,y);
             printf("%c", frame->scene[y][x]);
            }
-        //printf("\n");
+        printf("\n");
     }
     memcpy(prev_Screen_Buffer, frame->scene, X_MAX*Y_MAX);
     SetCursorPosition(1,1);
@@ -229,10 +229,11 @@ void Window::DisplayActiveScreen(SceneManager* frame){
 }
 //WindowCLASSEND
 
-//GLOBAL VARIABLES
+//GLOBAL VARIABLES && Object Instances
 Window MainWindow;
 SceneManager Scene1;
 SceneManager Scene2;
+bool exit_Game = false;
 
 //functionProts
 void Transform(int x, int y, GameObject* target_Object, SceneManager* current_Scene){
@@ -253,22 +254,28 @@ DWORD WINAPI Update(LPVOID lpParam){
         SceneManager* active_Scene = MainWindow.GetActiveScene();
         //PhysicsSystem
         for(auto game_object = active_Scene->gameObjects.begin(); game_object != active_Scene->gameObjects.end(); ++game_object){
-            if((*game_object)->isRigidBody){
+            if((*game_object) != NULL){
+                if((*game_object)->isRigidBody){
 
-                if((*game_object)->position[Y] < Y_MAX  - (*game_object)->height){
-                    //updateThePhysic of the object
-                    (*game_object)->velocity[X] += (*game_object)->acceleration[X] + gravity_vector[X];
-                    (*game_object)->velocity[Y] += (*game_object)->acceleration[Y] + gravity_vector[Y];
-                    int posX = (*game_object)->velocity[X]*DT;
-                    int posY = (*game_object)->velocity[Y]*DT;
-                    Transform(posX, posY, (*game_object), active_Scene);
-                }else{
-                    (*game_object)->velocity[X] += (*game_object)->acceleration[X] + gravity_vector[X];
-                    int posX = (*game_object)->velocity[X]*DT;
-                    Transform(posX, 0, (*game_object), active_Scene);
+                    if((*game_object)->position[Y] < Y_MAX  - (*game_object)->height){
+                        //updateThePhysic of the object
+                        (*game_object)->velocity[X] += (*game_object)->acceleration[X] + gravity_vector[X];
+                        (*game_object)->velocity[Y] += (*game_object)->acceleration[Y] + gravity_vector[Y];
+                        int posX = (*game_object)->velocity[X]*DT;
+                        int posY = (*game_object)->velocity[Y]*DT;
+                        Transform(posX, posY, (*game_object), active_Scene);
+                    }else{
+                        (*game_object)->velocity[X] += (*game_object)->acceleration[X] + gravity_vector[X];
+                        int posX = (*game_object)->velocity[X]*DT;
+                        Transform(posX, 0, (*game_object), active_Scene);
+                    }
+                    if((*game_object)->position[X] <= X_BUFFER_FOR_OBJECT|| (*game_object)->position[X] >= X_MAX - (*game_object)->width - X_BUFFER_FOR_OBJECT){
+                        (*game_object)->velocity[X] = -((*game_object)->velocity[X]);
+                    }
                 }
-                if((*game_object)->position[X] <= X_BUFFER_FOR_OBJECT|| (*game_object)->position[X] >= X_MAX - (*game_object)->width - X_BUFFER_FOR_OBJECT){
-                    (*game_object)->velocity[X] = -((*game_object)->velocity[X]);
+                if((*game_object)->single_Change){
+                    MainWindow.GetActiveScene()->DrawOnScene((*game_object));
+                    (*game_object)->single_Change = false;
                 }
             }
         }
@@ -326,7 +333,6 @@ void gameRoutine();
 
 //Program Entry Point
 int main(){
-    
     system("cls");
     system("cls");
     //this is thread creation and im a little confused
@@ -343,7 +349,10 @@ int main(){
         );
     //thread creation
     srand(time(0));
+    
     gameRoutine();
+    system("cls");
+
 
     return 0;
 }
@@ -392,27 +401,27 @@ void gameRoutine(){
     //Start End
 
     //Update
+        //Public Context For The GameLoop
         //local game related variables
+
+        /*string game_Info = "Player Health: ";
+        string game_Info_Update = "";*/
         main_player.isRigidBody = true;
         int move_Speed = 1;
-       
-
-        //Public Context For The GameLoop
+        string enemyID = "E0";
         srand(time(0));
         int rand_Cycle = 0;
         int cycle = 0;
 
+        /*GameObject game_Info_Object("game_Info_Object", 5,5, game_Info+game_Info_Update, 1,20);
+        Scene1.AddObject(&game_Info_Object);*/
         //Begin Bullet Spawning And Collision Checking
         HANDLE hBulletController;
         DWORD BulletControllerThreadID;
 
         hBulletController = CreateThread(NULL, 0, bulletController, NULL, 0, &BulletControllerThreadID);
-        
-
-        string enemyID = "E0";
         //GameLoop
-        while(1){
-            
+        while(1){      
             //InputBasedChangeBLOCK
             if(current_Input == 'w' && main_player.position[Y] > 1){
                 if(main_player.position[X] > 0 && main_player.position[X] < X_MAX && main_player.position[Y] > 0 && main_player.position[Y] < Y_MAX){
@@ -424,29 +433,55 @@ void gameRoutine(){
             else if(current_Input == 'a' && main_player.position[X] > 1){main_player.velocity[X] = -10;}
             else if(current_Input == 'p'){
                 //exit sequence
-                exit(1);                
+                bool exit_Loop = false;
+
+                while(!exit_Loop){
+                    cout.flush();
+                    MainWindow.SetActiveScene(&Scene2);
+                    system("cls");
+                    GameObject GameOver("GameOver", 5, 5, "The Game is Paused. You may press E to Exit, and R to Resume.", 1, 50);
+                    MainWindow.GetActiveScene()->AddObject(&GameOver);
+                    Sleep(200);
+                    bool change = false;
+                    while(!change){
+                        if(current_Input == 'e'){
+                            exit_Game = true;
+                            change = true;
+                            return;
+                        }else if (current_Input == 'r'){
+                            MainWindow.SetActiveScene(&Scene1);
+                            change = true;
+                            exit_Loop = true;
+                        }
+                    }
+
                 }
+            }
             else if(current_Input == 'b'){
-                GameObject* newDynCoin = new GameObject("Bullet", main_player.position[X], main_player.position[Y], "__",2,2);
-                newDynCoin->isRigidBody=true;
-                newDynCoin->velocity[X] = 50;
-                MainWindow.GetActiveScene()->objectCreator(newDynCoin);
+                GameObject* newDynBullet = new GameObject("Bullet", main_player.position[X], main_player.position[Y], "__",2,2);
+                newDynBullet->isRigidBody=true;
+                newDynBullet->velocity[X] = 50;
+                MainWindow.GetActiveScene()->objectCreator(newDynBullet);
                 Sleep(300);
 
                 //get current enemy most probably on the right
                 
                 MainWindow.GetActiveScene()->RemoveObject("Bullet");  
-            }else if(current_Input == 'v'){
-                GameObject* newDynCoin = new GameObject("Bullet", main_player.position[X], main_player.position[Y], "__",2,2);
-                newDynCoin->isRigidBody=true;
-                newDynCoin->velocity[X] = -50;
-                MainWindow.GetActiveScene()->objectCreator(newDynCoin);
+            }
+            else if(current_Input == 'v'){
+                GameObject* newDynBullet = new GameObject("Bullet", main_player.position[X], main_player.position[Y], "__",2,2);
+                newDynBullet->isRigidBody=true;
+                newDynBullet->velocity[X] = -50;
+                MainWindow.GetActiveScene()->objectCreator(newDynBullet);
                 Sleep(300);
                 MainWindow.GetActiveScene()->RemoveObject("Bullet");  
                 
-            }else if(current_Input == 'f'){
             }
-
+            /*else if(current_Input == 'f'){
+                MainWindow.GetActiveScene()->getObject("main_player")->health+=10;
+                game_Info_Update = to_string(MainWindow.GetActiveScene()->getObject("game_Info_Object")->health);
+                MainWindow.GetActiveScene()->getObject("game_Info_Object")->single_Change=true;
+            }*/
             if(current_Enemies < 1 && cycle > rand_Cycle){
                 int random_X_Pos = 50;
 
@@ -461,11 +496,7 @@ void gameRoutine(){
                 rand_Cycle = rand()%1000;
             }
             cycle++;
-            Sleep(REFRESH_TIME);
-
-
-
-            
+            Sleep(REFRESH_TIME);           
         }
     //Per Frame Update
 }
