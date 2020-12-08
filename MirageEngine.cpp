@@ -382,8 +382,16 @@ void gameRoutine(){
         }
         GameObject boundingBoxObject("boundingBox", 0,0, boundingBox, Y_MAX, X_MAX);
         Scene1.AddObject(&boundingBoxObject);
-        GameObject information("information", 10, 10, "Hello, Welcome to a Game Made in Mirage Engine.Press F11 to make the terminal Fullscreen.     Hold Y to Start.                               Press P at anytime to quit the game.", 5, 47);
+        GameObject Title("Title", 10, 2, "===========================================|  ________  __  __ ____ ___ _____ ____   || |__  / _ \\|  \\/  | __ )_ _| ____/ ___|  ||   / / | | | |\\/| |  _ \\| ||  _| \\___ \\  ||  / /| |_| | |  | | |_) | || |___ ___) | || /____\\___/|_|  |_|____/___|_____|____/  |===========================================", 5, 43);
+        Scene1.AddObject(&Title);
+        GameObject information("information", 10, 10, "Hello, Welcome to a Game Made in Mirage Engine.Press F11 to make the terminal Fullscreen.     Hold Y to Start.                               Look at all the controls and HAVE FUN.", 5, 47);
         Scene1.AddObject(&information);
+        GameObject information2("information2", 10, 15, "Controls:     Fly Up     - WMove Left  - AMove Right - DFire Left  - VFire Right - B--------------Pause Game - P", 5, 14);
+        Scene1.AddObject(&information2);
+        GameObject information3("information3", 10, 25, "WATCH OUT FOR THE RANDOMLY SPAWNING ZOMBIES!", 5, 50);
+        Scene1.AddObject(&information3);
+        GameObject information4("information4", 10, 26, "IF THEY TOUCH YOU, YOU DIE AND THE GAME ENDS!", 5, 50);
+        Scene1.AddObject(&information4);
         GameObject main_player("mainplayer", 70, 10, "  000  00 00  000    |    /|\\  / | \\   |    / \\  /   \\", 10, 6);
         Scene1.AddObject(&main_player);
 
@@ -391,13 +399,32 @@ void gameRoutine(){
 
         while(!command_to_continue){
             if(current_Input == 'y'){
+                
+                Scene1.RemoveObject("information");
+                Scene1.RemoveObject("information2");
+                Scene1.RemoveObject("information3");
+                Scene1.RemoveObject("information4");
+                
+                //animation
+                for(int frame = 0; frame < 10; frame++){
+                    Transform(1, 1, &Title, MainWindow.GetActiveScene());
+                    Sleep(100);
+                }
+                Sleep(200);
+
+                GameObject wiper("wiper", Title.position[X], Title.position[Y], "           ", 5,1);
+                Scene1.AddObject(&wiper);
+                
+                for(int frame = 0; frame < 50; frame++){
+                    Transform(1, 0, &wiper, MainWindow.GetActiveScene());
+                    Sleep(100);
+                }
                 break;
             }else if(current_Input == 'p'){
                 exit(0);
             }
             Sleep(REFRESH_TIME);
         }
-        Scene1.RemoveObject("information");
     //Start End
 
     //Update
@@ -483,7 +510,7 @@ void gameRoutine(){
                 MainWindow.GetActiveScene()->getObject("game_Info_Object")->single_Change=true;
             }*/
             if(current_Enemies < 1 && cycle > rand_Cycle){
-                int random_X_Pos = 50;
+                int random_X_Pos = 10;
 
                 GameObject* new_Enemy_Ptr = new GameObject(enemyID,random_X_Pos, 10, "  0 0  0   0 \\0|0/  \\{/    }     {     }    / \\  /   \\", 10, 6);
                 new_Enemy_Ptr->isRigidBody=true;
