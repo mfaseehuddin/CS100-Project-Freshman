@@ -7,7 +7,6 @@
 
 using namespace std;
 
-
 const int X = 0;
 const int Y = 1;
 const int X_MAX = 150;
@@ -16,7 +15,7 @@ const int MAX_OBJECTS = 20;
 const int REFRESH_TIME = 15;
 const float DT = 0.1; 
 const int X_BUFFER_FOR_OBJECT = 10;
-        int current_Enemies = 0;
+int current_Enemies = 0;
 
 bool scene_Change = true;
 char current_Input = '0';
@@ -220,11 +219,11 @@ void Window::DisplayActiveScreen(SceneManager* frame){
             SetCursorPosition(x,y);
             printf("%c", frame->scene[y][x]);
            }
-        printf("\n");
+        //printf("\n");
     }
     memcpy(prev_Screen_Buffer, frame->scene, X_MAX*Y_MAX);
     SetCursorPosition(1,1);
-    printf("g");
+    printf("=");
     scene_Change = false;
 
 }
@@ -273,7 +272,7 @@ DWORD WINAPI Update(LPVOID lpParam){
                 }
             }
         }
-        //PhysicsSystem
+        //PhysicsSystemEnd
         if(scene_Change){
             MainWindow.DisplayActiveScreen(MainWindow.GetActiveScene());
         }
@@ -463,6 +462,9 @@ void gameRoutine(){
             }
             cycle++;
             Sleep(REFRESH_TIME);
+
+
+
             
         }
     //Per Frame Update
