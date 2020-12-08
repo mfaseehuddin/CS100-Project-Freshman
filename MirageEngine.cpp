@@ -510,7 +510,10 @@ void gameRoutine(){
                 MainWindow.GetActiveScene()->getObject("game_Info_Object")->single_Change=true;
             }*/
             if(current_Enemies < 1 && cycle > rand_Cycle){
-                int random_X_Pos = 10;
+                float random_Float = rand_Cycle/1000.0;
+                //range of x pos is XBUFFER --- XMAX-XBUFFER-WIDTH
+                
+                int random_X_Pos = ((X_MAX-X_BUFFER_FOR_OBJECT-10)*random_Float)+X_BUFFER_FOR_OBJECT;
 
                 GameObject* new_Enemy_Ptr = new GameObject(enemyID,random_X_Pos, 10, "  0 0  0   0 \\0|0/  \\{/    }     {     }    / \\  /   \\", 10, 6);
                 new_Enemy_Ptr->isRigidBody=true;
