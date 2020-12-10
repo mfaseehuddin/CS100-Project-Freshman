@@ -297,10 +297,11 @@ DWORD WINAPI getAsyncInput(LPVOID lpParam){
     }
 }
 DWORD WINAPI bulletController(LPVOID lpParam){
-    GameObject* main_Player = MainWindow.GetActiveScene()->getObject("mainplayer");
+    GameObject* main_Player = NULL;
     GameObject* bullet = NULL;
     GameObject* enemy = NULL;
     while(1){
+        main_Player = MainWindow.GetActiveScene()->getObject("mainplayer");
         bullet = MainWindow.GetActiveScene()->getObject("Bullet");
         enemy = MainWindow.GetActiveScene()->getObject("E0");
         if(bullet != NULL && enemy != NULL){
@@ -317,6 +318,12 @@ DWORD WINAPI bulletController(LPVOID lpParam){
                 MainWindow.GetActiveScene()->RemoveObject("Hit");
                 MainWindow.GetActiveScene()->RemoveObject("E0");
                 current_Enemies--;
+                cout << abs(main_Player->position[X] - enemy->position[X]);
+            }
+        }
+        if(enemy!=NULL && main_Player!= NULL){
+            if(abs(main_Player->position[X] - enemy->position[X]) < 2&&abs(main_Player->position[Y] - enemy->position[Y]) < 2){
+                current_Input ='p';     
             }
         }
 
@@ -510,20 +517,20 @@ void gameRoutine(){
                 MainWindow.GetActiveScene()->getObject("game_Info_Object")->single_Change=true;
             }*/
             if(current_Enemies < 1 && cycle > rand_Cycle){
-                float random_Float = rand_Cycle/1000.0;
-                //range of x pos is XBUFFER --- XMAX-XBUFFER-WIDTH
-                
-                int random_X_Pos = ((X_MAX-X_BUFFER_FOR_OBJECT-10)*random_Float)+X_BUFFER_FOR_OBJECT;
+                    float random_Float = rand_Cycle/1000.0;
+                    //range of x pos is XBUFFER --- XMAX-XBUFFER-WIDTH
+                    
+                    int random_X_Pos = ((X_MAX-X_BUFFER_FOR_OBJECT-10)*random_Float)+X_BUFFER_FOR_OBJECT;
 
-                GameObject* new_Enemy_Ptr = new GameObject(enemyID,random_X_Pos, 10, "  0 0  0   0 \\0|0/  \\{/    }     {     }    / \\  /   \\", 10, 6);
-                new_Enemy_Ptr->isRigidBody=true;
-                new_Enemy_Ptr->velocity[X]=10;
-                MainWindow.GetActiveScene()->objectCreator(new_Enemy_Ptr);
-                
-                current_Enemies++;                
-                Sleep(500);
-                cycle = 0;
-                rand_Cycle = rand()%1000;
+                    GameObject* new_Enemy_Ptr = new GameObject(enemyID,random_X_Pos, 10, "  0 0  0   0 \\0|0/  \\{/    }     {     }    / \\  /   \\", 10, 6);
+                    new_Enemy_Ptr->isRigidBody=true;
+                    new_Enemy_Ptr->velocity[X]=10;
+                    MainWindow.GetActiveScene()->objectCreator(new_Enemy_Ptr);
+                    
+                    current_Enemies++;                
+                    Sleep(500);
+                    cycle = 0;
+                    rand_Cycle = rand()%1000;
             }
             cycle++;
             Sleep(REFRESH_TIME);           
