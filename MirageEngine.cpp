@@ -231,8 +231,9 @@ void Window::DisplayActiveScreen(SceneManager* frame){
 
 //GLOBAL VARIABLES && Object Instances
 Window MainWindow;
-SceneManager Scene1;
-SceneManager Scene2;
+SceneManager Scene_Game;
+SceneManager Scene_Pause;
+SceneManager Scene_Lose;
 bool exit_Game = false;
 
 //functionProts
@@ -323,7 +324,7 @@ DWORD WINAPI bulletController(LPVOID lpParam){
         }
         if(enemy!=NULL && main_Player!= NULL){
             if(abs(main_Player->position[X] - enemy->position[X]) < 2&&abs(main_Player->position[Y] - enemy->position[Y]) < 2){
-                current_Input ='p';     
+                current_Input ='~';     
             }
         }
 
@@ -372,7 +373,7 @@ void gameRoutine(){
     //UpdateThreadStarted
     
     //Start    
-        MainWindow.SetActiveScene(&Scene1);
+        MainWindow.SetActiveScene(&Scene_Game);
         //Creating Bounding Box
         string boundingBox="";
         for(int y=0; y < Y_MAX; y++){
@@ -388,29 +389,29 @@ void gameRoutine(){
             }
         }
         GameObject boundingBoxObject("boundingBox", 0,0, boundingBox, Y_MAX, X_MAX);
-        Scene1.AddObject(&boundingBoxObject);
+        Scene_Game.AddObject(&boundingBoxObject);
         GameObject Title("Title", 10, 2, "===========================================|  ________  __  __ ____ ___ _____ ____   || |__  / _ \\|  \\/  | __ )_ _| ____/ ___|  ||   / / | | | |\\/| |  _ \\| ||  _| \\___ \\  ||  / /| |_| | |  | | |_) | || |___ ___) | || /____\\___/|_|  |_|____/___|_____|____/  |===========================================", 5, 43);
-        Scene1.AddObject(&Title);
+        Scene_Game.AddObject(&Title);
         GameObject information("information", 10, 10, "Hello, Welcome to a Game Made in Mirage Engine.Press F11 to make the terminal Fullscreen.     Hold Y to Start.                               Look at all the controls and HAVE FUN.", 5, 47);
-        Scene1.AddObject(&information);
+        Scene_Game.AddObject(&information);
         GameObject information2("information2", 10, 15, "Controls:     Fly Up     - WMove Left  - AMove Right - DFire Left  - VFire Right - B--------------Pause Game - P", 5, 14);
-        Scene1.AddObject(&information2);
+        Scene_Game.AddObject(&information2);
         GameObject information3("information3", 10, 25, "WATCH OUT FOR THE RANDOMLY SPAWNING ZOMBIES!", 5, 50);
-        Scene1.AddObject(&information3);
+        Scene_Game.AddObject(&information3);
         GameObject information4("information4", 10, 26, "IF THEY TOUCH YOU, YOU DIE AND THE GAME ENDS!", 5, 50);
-        Scene1.AddObject(&information4);
+        Scene_Game.AddObject(&information4);
         GameObject main_player("mainplayer", 70, 10, "  000  00 00  000    |    /|\\  / | \\   |    / \\  /   \\", 10, 6);
-        Scene1.AddObject(&main_player);
+        Scene_Game.AddObject(&main_player);
 
         bool command_to_continue = false;
 
         while(!command_to_continue){
             if(current_Input == 'y'){
                 
-                Scene1.RemoveObject("information");
-                Scene1.RemoveObject("information2");
-                Scene1.RemoveObject("information3");
-                Scene1.RemoveObject("information4");
+                Scene_Game.RemoveObject("information");
+                Scene_Game.RemoveObject("information2");
+                Scene_Game.RemoveObject("information3");
+                Scene_Game.RemoveObject("information4");
                 
                 //animation
                 for(int frame = 0; frame < 10; frame++){
@@ -420,7 +421,7 @@ void gameRoutine(){
                 Sleep(200);
 
                 GameObject wiper("wiper", Title.position[X], Title.position[Y], "           ", 5,1);
-                Scene1.AddObject(&wiper);
+                Scene_Game.AddObject(&wiper);
                 
                 for(int frame = 0; frame < 50; frame++){
                     Transform(1, 0, &wiper, MainWindow.GetActiveScene());
@@ -448,7 +449,7 @@ void gameRoutine(){
         int cycle = 0;
 
         /*GameObject game_Info_Object("game_Info_Object", 5,5, game_Info+game_Info_Update, 1,20);
-        Scene1.AddObject(&game_Info_Object);*/
+        Scene_Game.AddObject(&game_Info_Object);*/
         //Begin Bullet Spawning And Collision Checking
         HANDLE hBulletController;
         DWORD BulletControllerThreadID;
@@ -460,7 +461,7 @@ void gameRoutine(){
             if(current_Input == 'w' && main_player.position[Y] > 1){
                 if(main_player.position[X] > 0 && main_player.position[X] < X_MAX && main_player.position[Y] > 0 && main_player.position[Y] < Y_MAX){
                     main_player.velocity[Y] = 0;main_player.velocity[X] = 0;
-                    Transform(0,-move_Speed, &main_player, &Scene1);
+                    Transform(0,-move_Speed, &main_player, &Scene_Game);
                 }
             }else if(current_Input == 's'){main_player.velocity[X] = 0;}
             else if(current_Input == 'd' && main_player.position[X] < X_MAX - main_player.width - 1){main_player.velocity[X] = 10;}
@@ -471,10 +472,10 @@ void gameRoutine(){
 
                 while(!exit_Loop){
                     cout.flush();
-                    MainWindow.SetActiveScene(&Scene2);
+                    MainWindow.SetActiveScene(&Scene_Pause);
                     system("cls");
-                    GameObject GameOver("GameOver", 5, 5, "The Game is Paused. You may press E to Exit, and R to Resume.", 1, 50);
-                    MainWindow.GetActiveScene()->AddObject(&GameOver);
+                    GameObject GamePause("GamePause", 5, 5, "The Game is Paused. You may press E to Exit, and R to Resume.", 1, 50);
+                    MainWindow.GetActiveScene()->AddObject(&GamePause);
                     Sleep(200);
                     bool change = false;
                     while(!change){
@@ -483,7 +484,7 @@ void gameRoutine(){
                             change = true;
                             return;
                         }else if (current_Input == 'r'){
-                            MainWindow.SetActiveScene(&Scene1);
+                            MainWindow.SetActiveScene(&Scene_Game);
                             change = true;
                             exit_Loop = true;
                         }
@@ -510,6 +511,19 @@ void gameRoutine(){
                 Sleep(300);
                 MainWindow.GetActiveScene()->RemoveObject("Bullet");  
                 
+            }
+            else if(current_Input == '~'){
+                cout.flush();
+                MainWindow.SetActiveScene(&Scene_Lose);
+                system("cls");
+                GameObject GameOver("GameOver", 5, 5, "===================================================|  __   _____  _   _   ____ ___ _____ ____    _   ||  \\ \\ / / _ \\| | | | |  _ \\_ _| ____|  _ \\  | |  ||   \\ V / | | | | | | | | | | ||  _| | | | | | |  ||    | || |_| | |_| | | |_| | || |___| |_| | |_|  ||    |_| \\___/ \\___/  |____/___|_____|____/  (_)  ||                                                 |=================================================== ", 7, 51);
+                MainWindow.GetActiveScene()->AddObject(&GameOver);
+                GameObject GameOverExit("GameOverExit", 5, 15, "SO YOU DIED? Awh. NOW YOU QUIT GAME OK?Now keep ctrl+c pressed to exit", 1, 39);
+                MainWindow.GetActiveScene()->AddObject(&GameOverExit);
+                Sleep(5000);
+                while(1){
+                    
+                }
             }
             /*else if(current_Input == 'f'){
                 MainWindow.GetActiveScene()->getObject("main_player")->health+=10;
